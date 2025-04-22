@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>每日心情日記</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+   
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: linear-gradient(to bottom, #fefefe, #f7f4f1);
+      color: #444;
+      padding: 40px 20px;
+      background-image:
+        url('https://cdn-icons-png.flaticon.com/512/616/616408.png');
+      background-repeat: repeat;
+      background-size: 60px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background-color: #ffffffee;
+      padding: 40px;
+      border-radius: 24px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+      position: relative;
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #a87c6f;
+      font-size: 2.4rem;
+      position: relative;
+    }
+
+    h1::after {
+      content: '🎀💕💖✨';
+      position: absolute;
+      right: -70px;
+      top: 0;
+      font-size: 1.6rem;
+      animation: float 2s infinite ease-in-out;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    #quoteBox {
+      text-align: center;
+      font-style: italic;
+      font-size: 1.1rem;
+      margin-bottom: 30px;
+      color: #8c6c64;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 15px 20px;
+      margin-bottom: 40px;
+    }
+
+    form label {
+      align-self: center;
+      font-weight: 700;
+      color: #555;
+    }
+
+    form input,
+    form select {
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      font-size: 1rem;
+      background-color: #fffaf8;
+    }
+
+    form button {
+      grid-column: span 2;
+      padding: 12px;
+      background-color: #d9a7a1;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    form button:hover {
+      background-color: #c1847c;
+      transform: translateY(-2px);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      margin-bottom: 30px;
+    }
+
+    table th,
+    table td {
+      border: 1px solid #f3eae5;
+      padding: 12px;
+      text-align: center;
+    }
+
+    table th {
+      background-color: #f5dcd6;
+      color: #6b3f35;
+    }
+
+    table tr:nth-child(even) {
+      background-color: #fdf7f5;
+    }
+
+    table tr:hover td {
+      background-color: #f8ece7;
+    }
+
+    /* 讓表格中的留言自動換行 */
+    table td {
+     word-wrap: break-word; /* 讓長文字自動換行 */
+     white-space: normal; /* 讓文字不會超出單行顯示 */
+     padding: 12px; /* 保持與其他表格欄位一致的間距 */
+    }
+    /* 讓留言自動換行 */
+    #encourageMessage {
+      word-wrap: break-word; /* 讓長文字自動換行 */
+      white-space: normal;   /* 讓文字不會超出單行顯示 */
+      max-width: 240px; /* 限制最大寬度，防止文字過長 */
+      padding: 12px 16px;
+    }
+
+
+    .cat-icon {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      width: 60px;
+      animation: swing 2s infinite ease-in-out;
+      z-index: 100;
+      cursor: pointer;
+    }
+
+    @keyframes swing {
+      0% { transform: rotate(0deg); }
+      50% { transform: rotate(5deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    .heart {
+      position: fixed;
+      width: 40px;
+      height: 40px;
+      background: url('https://cdn-icons-png.flaticon.com/512/833/833472.png') no-repeat center;
+      background-size: contain;
+      animation: floatHeart 1s ease-out forwards;
+      pointer-events: none;
+      z-index: 200;
+    }
+
+    @keyframes floatHeart {
+      0% { opacity: 1; transform: scale(1) translateY(0); }
+      100% { opacity: 0; transform: scale(1.5) translateY(-80px); }
+    }
+
+    #chartContainer {
+      margin-top: 40px;
+    }
+
+    .search-bar {
+      margin: 20px 0;
+      display: flex;
+      gap: 10px;
+    }
+
+    .search-bar input {
+      flex: 1;
+      padding: 8px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+
+    textarea {
+      width: 100%;
+      height: auto;
+      min-height: 50px; /* 最小高度 */
+      resize: none; /* 禁止用戶手動調整大小 */
+      overflow: hidden; /* 隱藏滾動條 */
+}
+
+    textarea {
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      font-size: 1rem;
+      background-color: #fffaf8;
+      width: 100%;
+      min-height: 50px; /* 最小高度 */
+      resize: none; /* 禁止手動調整大小 */
+      overflow: hidden; /* 隱藏滾動條 */
+}
+
+.countdown-section {
+  margin-top: 300px;
+  padding: 15px;
+  border-radius: 15px;
+  background-color: #fff0f5;
+  box-shadow: 0 0 10px rgba(255, 192, 203, 0.3);
+  text-align: center;
+}
+.countdown-section h3 {
+  margin-bottom: 10px;
+  font-size: 1.2em;
+  color: #9e2f40;
+}
+.countdown-section input, .countdown-section button {
+  margin: 5px;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+.countdown-section button {
+  background-color: #ffd1dc;
+  border: none;
+  cursor: pointer;
+}
+#countdown-result {
+  margin-top: 10px;
+  font-weight: bold;
+  color: #9e2f40;
+}
+
+
+
+  </style>
+</head>
+
+<body>
+ 
+  <div class="container">
+    <h1>📔 每日心情日記</h1>
+    <div id="quoteBox">🌸 今日語錄：載入中...</div>
+
+    <form id="moodForm">
+      <label for="date">日期：</label>
+      <input type="date" id="date" required />
+
+      <label for="mood">心情：</label>
+      <select id="mood">
+        <option value="😊">😊 開心</option>
+        <option value="😐">😐 普通</option>
+        <option value="😢">😢 難過</option>
+        <option value="😠">😠 生氣</option>
+      </select>
+
+      <label for="weather">天氣：</label>
+      <select id="weather">
+        <option value="☀️">☀️ 晴天</option>
+        <option value="☁️">☁️ 陰天</option>
+        <option value="🌧️">🌧️ 下雨</option>
+        <option value="❄️">❄️ 下雪</option>
+      </select>
+
+      <label for="note">留言：</label>
+      <textarea id="note" maxlength="1000" placeholder="今天過得如何呢？" rows="4" cols="50"></textarea>
+
+      <button type="submit">新增紀錄</button>
+    
+    </form>
+
+
+
+
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="🔍 搜尋留言...">
+    </div>
+
+    <table id="moodTable">
+      <thead>
+        <tr>
+          <th>日期</th>
+          <th>心情</th>
+          <th>天氣</th>
+          <th>留言</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+
+
+    <!-- 💖 心情倒數日區塊 -->
+<section id="countdown-section" style="background-color: #f9e1e1; border-radius: 20px; padding: 20px; margin: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+  <h2 style="text-align:center; font-family: 'Comic Sans MS', cursive; color: #8c071f;">🎀 心情倒數日 🎀</h2>
+  <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+    <input id="event-title" type="text" placeholder="輸入事件名稱" style="padding: 10px; border-radius: 10px; border: 1px solid #ffcdd2; width: 80%; font-size: 1em;">
+    <input id="event-date" type="date" style="padding: 10px; border-radius: 10px; border: 1px solid #bd848a; width: 80%; font-size: 1em;">
+    <button onclick="addCountdownEvent()" style="padding:10px 20px; border:none; border-radius:20px; background-color:#da9b9b; color:white; font-weight:bold; cursor:pointer;">➕ 新增倒數</button>
+  </div>
+  <ul id="countdown-list" style="margin-top: 20px; list-style: none; padding: 0;"></ul>
+
+  <div id="countdownSection" style="margin-top: 30px;">
+
+</section>
+
+    <div id="chartContainer">
+      <canvas id="moodPieChart" style="margin-top: 30px;"></canvas>
+      <canvas id="moodChart"></canvas>
+    </div>
+  </div>
+
+  
+  <img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/616/616408.png" alt="小貓咪圖示">
+  <div id="encourageMessage" style="
+  position: fixed;
+  bottom: 100px;
+  left: 20px;
+  background: #fff5f5;
+  border: 1px solid #ce8383;
+  border-radius: 14px;
+  padding: 12px 16px;
+  color: #a05d5d;
+  font-size: 1rem;
+  font-weight: bold;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+  max-width: 240px;
+  z-index: 999;
+"></div>
+
+
+  <script>
+    const form = document.getElementById('moodForm');
+    const tableBody = document.querySelector('#moodTable tbody');
+    const searchInput = document.getElementById('searchInput');
+    const chartCanvas = document.getElementById('moodChart');
+    const quoteBox = document.getElementById('quoteBox');
+    const catIcon = document.querySelector('.cat-icon');
+
+    const moodCounts = { '😊': 0, '😐': 0, '😢': 0, '😠': 0 };
+    let chart;
+
+    const quotes = [
+      "每一天都是全新的開始 🌞",
+      "今天也要好好愛自己 💖",
+      "小小進步也是進步 ✨",
+      "你值得所有的美好 💕",
+      "陰天也能散發光芒 ☁️✨",
+      "努力的你最美 🌸"
+    ];
+
+    function randomQuote() {
+      const index = Math.floor(Math.random() * quotes.length);
+      quoteBox.textContent = '🌸 今日語錄：' + quotes[index];
+    }
+
+    function updateChart() {
+  if (chart) chart.destroy();
+  chart = new Chart(chartCanvas, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(moodCounts),
+      datasets: [{
+        label: '心情次數統計',
+        data: Object.values(moodCounts),
+        backgroundColor: ['#ffb3b3', '#ffd699', '#aec6cf', '#e0b0ff']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } }
+    }
+  });
+
+}
+
+
+    function saveToLocalStorage() {
+      localStorage.setItem('moodData', tableBody.innerHTML);
+      localStorage.setItem('moodCounts', JSON.stringify(moodCounts));
+    }
+
+    function loadFromLocalStorage() {
+      const savedRows = localStorage.getItem('moodData');
+      const savedCounts = localStorage.getItem('moodCounts');
+      if (savedRows) tableBody.innerHTML = savedRows;
+      if (savedCounts) {
+        const saved = JSON.parse(savedCounts);
+        for (const mood in moodCounts) {
+          moodCounts[mood] = saved[mood] || 0;
+        }
+      }
+      updateChart();
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const date = document.getElementById('date').value;
+      const mood = document.getElementById('mood').value;
+      const weather = document.getElementById('weather').value;
+      const note = document.getElementById('note').value;
+
+      const newRow = document.createElement('tr');
+      newRow.innerHTML = `
+        <td>${date}</td>
+        <td>${mood}</td>
+        <td>${weather}</td>
+        <td>${note}</td>
+        <td>
+          <button onclick="editRow(this)">✏️</button>
+          <button onclick="deleteRow(this, '${mood}')">🗑️</button>
+        </td>
+      `;
+
+      tableBody.appendChild(newRow);
+      moodCounts[mood]++;
+      updateChart();
+      saveToLocalStorage();
+      form.reset();
+      updateMoodSuggestion();
+    });
+
+    function deleteRow(button, mood) {
+      const row = button.closest('tr');
+      row.remove();
+      if (moodCounts[mood] > 0) moodCounts[mood]--;
+      saveToLocalStorage();
+      updateChart();
+    }
+
+    function editRow(button) {
+      const row = button.closest('tr');
+      const cells = row.querySelectorAll('td');
+      const oldDate = cells[0].textContent;
+      const oldMood = cells[1].textContent;
+      const oldWeather = cells[2].textContent;
+      const oldNote = cells[3].textContent;
+
+      const newDate = prompt("修改日期", oldDate) || oldDate;
+      const newMood = prompt("修改心情（😊/😐/😢/😠）", oldMood) || oldMood;
+      const newWeather = prompt("修改天氣（☀️/☁️/🌧️/❄️）", oldWeather) || oldWeather;
+      const newNote = prompt("修改留言", oldNote) || oldNote;
+
+      if (newMood !== oldMood) {
+        if (moodCounts[oldMood] > 0) moodCounts[oldMood]--;
+        moodCounts[newMood] = (moodCounts[newMood] || 0) + 1;
+      }
+
+      cells[0].textContent = newDate;
+      cells[1].textContent = newMood;
+      cells[2].textContent = newWeather;
+      cells[3].textContent = newNote;
+
+      saveToLocalStorage();
+      updateChart();
+    }
+
+    searchInput.addEventListener('input', function () {
+      const keyword = this.value.toLowerCase();
+      Array.from(tableBody.rows).forEach(row => {
+        const note = row.cells[3].textContent.toLowerCase();
+        row.style.display = note.includes(keyword) ? '' : 'none';
+      });
+    });
+
+    catIcon.addEventListener('click', function (e) {
+      const heart = document.createElement('div');
+      heart.className = 'heart';
+      heart.style.left = `${e.clientX - 20}px`;
+      heart.style.top = `${e.clientY - 20}px`;
+      document.body.appendChild(heart);
+      setTimeout(() => heart.remove(), 1000);
+    });
+
+    window.addEventListener('load', () => {
+      loadFromLocalStorage();
+      randomQuote();
+    });
+    const encourageBox = document.getElementById('encourageMessage');
+
+catIcon.addEventListener('click', function (e) {
+  // 飛心動畫
+  const heart = document.createElement('div');
+  heart.className = 'heart';
+  heart.style.left = `${e.clientX - 20}px`;
+  heart.style.top = `${e.clientY - 20}px`;
+  document.body.appendChild(heart);
+  setTimeout(() => heart.remove(), 1000);
+
+  // 顯示隨機鼓勵語
+  const random = quotes[Math.floor(Math.random() * quotes.length)];
+  encourageBox.textContent = random;
+  encourageBox.style.opacity = '1';
+
+  // 幾秒後自動消失
+  setTimeout(() => {
+    encourageBox.style.opacity = '0';
+  }, 3000);
+});
+
+function setCountdown() {
+  const name = document.getElementById("countdown-name").value.trim();
+  const dateStr = document.getElementById("countdown-date").value;
+  const resultDiv = document.getElementById("countdown-result");
+
+  if (!name || !dateStr) {
+    resultDiv.textContent = "請輸入事件名稱和日期喔！";
+    return;
+  }
+
+  const today = new Date();
+  const target = new Date(dateStr);
+  const diffTime = target - today;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  let message = "";
+  if (diffDays > 0) {
+    message = `距離「${name}」還有 ${diffDays} 天！你可以的 💪`;
+  } else if (diffDays === 0) {
+    message = `就是今天！「${name}」來啦 🎉 記得保持好心情～`;
+  } else {
+    message = `「${name}」已經過了 ${-diffDays} 天～希望你回憶滿滿 ✨`;
+  }
+
+  resultDiv.textContent = message;
+}
+function loadCountdownEvents() {
+  const events = JSON.parse(localStorage.getItem("countdownEvents") || "[]");
+  return events;
+}
+
+function saveCountdownEvents(events) {
+  localStorage.setItem("countdownEvents", JSON.stringify(events));
+}
+
+function updateCountdownDisplay() {
+  const list = document.getElementById("countdown-list");
+  list.innerHTML = "";
+  const events = loadCountdownEvents();
+
+  events.forEach((event, index) => {
+    const today = new Date();
+    const eventDate = new Date(event.date);
+    const timeDiff = eventDate - today;
+    const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+    const li = document.createElement("li");
+    li.style.padding = "10px";
+    li.style.margin = "5px";
+    li.style.background = "#fff0f5";
+    li.style.borderRadius = "12px";
+    li.style.boxShadow = "0 2px 5px rgba(0,0,0,0.1)";
+    li.style.fontFamily = "Comic Sans MS, cursive";
+
+    li.innerHTML = `
+      <span style="font-size:1.1em;">📅 <strong>${event.title}</strong>：還有 <span style="color:#ff6384;">${daysLeft}</span> 天</span>
+      <button onclick="deleteCountdownEvent(${index})" style="float:right; background:none; border:none; color:#ff6f91; font-weight:bold; cursor:pointer;">🗑</button>
+    `;
+
+    list.appendChild(li);
+  });
+}
+
+function addCountdownEvent() {
+  const title = document.getElementById("event-title").value;
+  const date = document.getElementById("event-date").value;
+  if (!title || !date) {
+    alert("請輸入事件名稱與日期！");
+    return;
+  }
+
+  const events = loadCountdownEvents();
+  events.push({ title, date });
+  saveCountdownEvents(events);
+  updateCountdownDisplay();
+  document.getElementById("event-title").value = "";
+  document.getElementById("event-date").value = "";
+}
+
+function deleteCountdownEvent(index) {
+  const events = loadCountdownEvents();
+  events.splice(index, 1);
+  saveCountdownEvents(events);
+  updateCountdownDisplay();
+}
+
+window.addEventListener("load", updateCountdownDisplay);
+
+
+
+
+  </script>
+</body>
+
+</html>
